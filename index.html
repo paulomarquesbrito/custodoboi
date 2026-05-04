@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#d97706">
+<meta name="color-scheme" content="light">
+<link rel="manifest" href="./manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Calculadora Boi Casado</title>
+<link rel="icon" type="image/png" sizes="192x192" href="./assets/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch-icon.png">
+<style>
+  :root { 
+    color-scheme: light;
+    --bg: #f8fafc; --card: #ffffff; --primary: #d97706; --primary-hover: #b45309; 
+    --secondary: #3b82f6; --secondary-hover: #2563eb;
+    --success: #16a34a; --danger: #dc2626; --text: #0f172a; --muted: #64748b; 
+    --border: #e2e8f0; --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+  html { background: var(--bg); color-scheme: light; }
+  body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 16px 16px calc(16px + var(--safe-bottom)) 16px; }
+  .card { background: var(--card); width: 100%; max-width: 400px; border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
+  .header { background: linear-gradient(135deg, #ea580c, #d97706); color: white; padding: 20px; }
+  .header h1 { font-size: 1.5rem; font-weight: 700; }
+  .header p { font-size: 0.85rem; opacity: 0.9; margin-top: 4px; }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); }
+  .tab { flex: 1; padding: 14px 8px; text-align: center; font-size: 0.85rem; font-weight: 600; cursor: pointer; background: transparent; border: none; color: var(--muted); transition: 0.2s; user-select: none; }
+  .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); }
+  .content { padding: 20px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+  .input-wrap { position: relative; }
+  .input-wrap span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 500; pointer-events: none; }
+  input { width: 100%; padding: 14px 14px 14px 40px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; min-height: 48px; outline: none; background: var(--bg); transition: 0.2s; color: var(--text); }
+  input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent); }
+  .btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 8px; transition: 0.2s; min-height: 48px; user-select: none; }
+
+  .install-btn { display: none; margin-top: 14px; width: auto; min-height: 40px; padding: 10px 14px; background: rgba(255,255,255,0.18); color: #fff; border: 1px solid rgba(255,255,255,0.35); border-radius: 999px; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+  .install-btn.show { display: inline-flex; align-items: center; gap: 6px; }
+  .pwa-status { margin-top: 10px; font-size: 0.76rem; opacity: 0.85; line-height: 1.35; }
+  .btn:hover { background: var(--primary-hover); }
+  .btn:active { transform: scale(0.98); }
+  .btn-copy { background: var(--secondary); margin-top: 12px; }
+  .btn-copy:hover { background: var(--secondary-hover); }
+  .btn-copy:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+  .result { display: none; margin-top: 16px; padding: 16px; background: color-mix(in srgb, var(--success) 8%, transparent); border: 1px solid color-mix(in srgb, var(--success) 20%, transparent); border-radius: 12px; text-align: center; position: relative; }
+  .result.show { display: block; animation: fadeIn 0.3s ease; }
+  .result h2 { color: var(--success); font-size: 2rem; font-weight: 800; }
+  .result p { color: var(--success); font-size: 0.85rem; margin-top: 4px; opacity: 0.85; }
+  .copy-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 100; text-align: center; }
+  .copy-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .error { display: none; margin-top: 12px; padding: 12px; background: color-mix(in srgb, var(--danger) 8%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent); border-radius: 10px; color: var(--danger); font-size: 0.85rem; text-align: center; }
+  .error.show { display: block; }
+  .history { margin-top: 20px; width: 100%; max-width: 400px; background: var(--card); border-radius: 12px; padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+  .history h3 { font-size: 0.9rem; color: var(--muted); margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; padding: 10px 0; border-bottom: 1px dashed var(--border); }
+  .row:last-child { border-bottom: none; }
+  .mode { font-weight: 600; color: var(--primary); width: 40px; }
+  .val { color: var(--success); font-weight: 600; }
+  .time { font-size: 0.7rem; color: var(--muted); }
+  .clear-btn { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+  .clear-btn:hover { background: color-mix(in srgb, var(--danger) 20%, transparent); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <h1>🥩 Boi Casado</h1>
+    <p>Cálculo direto e reverso offline</p>
+    <button class="install-btn" id="installBtn" type="button">📲 Instalar app</button>
+    <div class="pwa-status" id="pwaStatus">Funciona offline após o primeiro acesso.</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-mode="boi">Preço Boi</button>
+    <button class="tab" data-mode="tr">Calcular TR</button>
+    <button class="tab" data-mode="dt">Calcular DT</button>
+    <button class="tab" data-mode="pa">Calcular PA</button>
+  </div>
+  <div class="content">
+    <div id="fields"></div>
+    <button class="btn" id="calcBtn">Calcular</button>
+    
+    <div class="result" id="result">
+      <h2 id="resValue">R$ 0,00</h2>
+      <p id="resDetail"></p>
+    </div>
+    
+    <button class="btn btn-copy" id="copyBtn" disabled>📤 Compartilhar / Copiar</button>
+    
+    <div class="error" id="error"></div>
+  </div>
+</div>
+
+<div class="history" id="historyBlock">
+  <h3>
+    📋 Histórico
+    <button id="clearHistoryBtn" class="clear-btn">🗑️ Limpar</button>
+  </h3>
+  <div id="historyList"></div>
+</div>
+
+<div class="copy-toast" id="copyToast">✅ Ação concluída!</div>
+
+<script>
+  const MODES = {
+    boi: ['tr', 'dt', 'pa'],
+    tr: ['boi', 'dt', 'pa'],
+    dt: ['boi', 'tr', 'pa'],
+    pa: ['boi', 'tr', 'dt']
+  };
+  const LABELS = { tr: 'Traseiro', dt: 'Dianteiro', pa: 'P.A.', boi: 'Preço do Boi' };
+  let currentMode = 'boi';
+  let lastValues = { boi: '', tr: '', dt: '', pa: '' };
+
+  const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+  // Parser unificado: trata vírgula e ponto como decimal
+  const parse = str => {
+    if (!str) return null;
+    const clean = String(str).replace(/[^0-9.,]/g, '').replace(/,/g, '.').replace(/\.+/g, '.');
+    const n = parseFloat(clean);
+    return isNaN(n) ? null : n;
+  };
+  const fmtNum = n => (n || 0).toFixed(2).replace('.', ',');
+
+  function renderFields() {
+    const container = document.getElementById('fields');
+    container.innerHTML = '';
+    const fields = MODES[currentMode];
+    fields.forEach(f => {
+      const div = document.createElement('div');
+      div.className = 'field';
+      div.innerHTML = `
+        <label>${LABELS[f]}</label>
+        <div class="input-wrap">
+          <span>R$</span>
+          <input type="text" inputmode="decimal" id="in_${f}" placeholder="0,00" autocomplete="off">
+        </div>`;
+      container.appendChild(div);
+    });
+    document.getElementById('result').classList.remove('show');
+    document.getElementById('error').classList.remove('show');
+    document.getElementById('copyBtn').disabled = true;
+    setTimeout(() => document.getElementById(`in_${fields[0]}`).focus(), 100);
+  }
+
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      currentMode = btn.dataset.mode;
+      renderFields();
+    };
+  });
+
+  document.getElementById('calcBtn').onclick = () => {
+    const errEl = document.getElementById('error');
+    const resEl = document.getElementById('result');
+    errEl.classList.remove('show');
+    resEl.classList.remove('show');
+    document.getElementById('copyBtn').disabled = true;
+
+    const vals = {};
+    let missing = [];
+    MODES[currentMode].forEach(f => {
+      const raw = document.getElementById(`in_${f}`).value;
+      const v = parse(raw);
+      if (v === null) missing.push(LABELS[f]);
+      vals[f] = v;
+    });
+
+    if (missing.length) { errEl.textContent = `Preencha: ${missing.join(', ')}`; errEl.classList.add('show'); return; }
+
+    let res = 0, detail = '';
+    try {
+      if (currentMode === 'boi') {
+        const custo = (vals.tr * 7) + (vals.dt * 6) + (vals.pa * 2);
+        res = custo / 15;
+        detail = `Custo total: ${fmt(custo)}`;
+        lastValues = { boi: fmtNum(res), tr: fmtNum(vals.tr), dt: fmtNum(vals.dt), pa: fmtNum(vals.pa) };
+      } else {
+        const custo = vals.boi * 15;
+        if (currentMode === 'tr') res = (custo - (vals.dt*6) - (vals.pa*2)) / 7;
+        else if (currentMode === 'dt') res = (custo - (vals.tr*7) - (vals.pa*2)) / 6;
+        else if (currentMode === 'pa') res = (custo - (vals.tr*7) - (vals.dt*6)) / 2;
+        detail = `Baseado no Boi e nos demais`;
+        lastValues = { 
+          boi: fmtNum(vals.boi), 
+          tr: currentMode === 'tr' ? fmtNum(res) : fmtNum(vals.tr),
+          dt: currentMode === 'dt' ? fmtNum(res) : fmtNum(vals.dt),
+          pa: currentMode === 'pa' ? fmtNum(res) : fmtNum(vals.pa)
+        };
+      }
+      if (res < 0) throw new Error('Valores geram preço negativo.');
+      
+      document.getElementById('resValue').textContent = fmt(res);
+      document.getElementById('resDetail').textContent = detail;
+      resEl.classList.add('show');
+      document.getElementById('copyBtn').disabled = false;
+      saveHistory(currentMode, vals, res);
+      setTimeout(() => resEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.classList.add('show');
+    }
+  };
+
+  document.addEventListener('keydown', e => e.key === 'Enter' && document.getElementById('calcBtn').click());
+
+  document.getElementById('copyBtn').onclick = async () => {
+    const text = `Boi: ${lastValues.boi}\nTR: ${lastValues.tr}\nDT: ${lastValues.dt}\nPA: ${lastValues.pa}`;
+    const toast = document.getElementById('copyToast');
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: text });
+        toast.textContent = '✅ Enviado/Compartilhado!';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+        return;
+      } catch (err) { if (err.name === 'AbortError') return; }
+    }
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        toast.textContent = '✅ Copiado!';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+        return;
+      } catch (err) {}
+    }
+    
+    toast.textContent = '⚠️ Copie manualmente o texto';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+    const box = document.createElement('pre');
+    box.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border:2px solid #3b82f6;padding:16px;border-radius:12px;font-family:monospace;font-size:16px;z-index:999;user-select:text;text-align:left;box-shadow:0 8px 30px rgba(0,0,0,0.3);max-width:85vw;';
+    box.textContent = text;
+    document.body.appendChild(box);
+    setTimeout(() => box.remove(), 10000);
+  };
+
+  function saveHistory(mode, vals, res) {
+    const list = JSON.parse(localStorage.getItem('boi_history') || '[]');
+    const now = new Date();
+    list.unshift({ 
+      mode, 
+      tr: fmtNum(vals.tr), dt: fmtNum(vals.dt), pa: fmtNum(vals.pa), boi: fmtNum(vals.boi), 
+      res: fmt(res),
+      time: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    });
+    if (list.length > 15) list.pop();
+    localStorage.setItem('boi_history', JSON.stringify(list));
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list = JSON.parse(localStorage.getItem('boi_history') || '[]');
+    const container = document.getElementById('historyList');
+    if (!list.length) { 
+      container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:12px;font-size:0.85rem;">Nenhum cálculo salvo ainda.</p>'; 
+      return; 
+    }
+    container.innerHTML = list.map(h => `
+      <div class="row">
+        <div>
+          <span class="mode">${h.mode.toUpperCase()}</span>
+          <div class="time">${h.time}</div>
+        </div>
+        <span>TR:${h.tr} DT:${h.dt} PA:${h.pa} Boi:${h.boi}</span>
+        <span class="val">${h.res}</span>
+      </div>`).join('');
+  }
+
+  document.getElementById('clearHistoryBtn').onclick = () => {
+    if (confirm('Deseja apagar permanentemente todo o histórico?')) {
+      localStorage.removeItem('boi_history');
+      renderHistory();
+    }
+  };
+
+  renderFields();
+  renderHistory();
+</script>
+
+<script>
+  // Registro do Service Worker para funcionar offline no GitHub Pages/HTTPS.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js', { scope: './' })
+        .then(() => {
+          const status = document.getElementById('pwaStatus');
+          if (status) status.textContent = 'Pronto para instalar e usar offline.';
+        })
+        .catch(() => {
+          const status = document.getElementById('pwaStatus');
+          if (status) status.textContent = 'Offline será ativado quando publicado em HTTPS, como no GitHub Pages.';
+        });
+    });
+  }
+
+  let deferredInstallPrompt = null;
+  const installBtn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    if (installBtn) installBtn.classList.add('show');
+  });
+
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) {
+        alert('Para instalar: abra o menu do navegador e toque em “Adicionar à tela inicial” ou “Instalar app”.');
+        return;
+      }
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      installBtn.classList.remove('show');
+    });
+  }
+
+  window.addEventListener('appinstalled', () => {
+    if (installBtn) installBtn.classList.remove('show');
+    const status = document.getElementById('pwaStatus');
+    if (status) status.textContent = 'App instalado com sucesso.';
+  });
+</script>
+
+</body>
+</html>
